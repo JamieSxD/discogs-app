@@ -4,68 +4,47 @@ import {
   Toolbar,
   Typography,
   Button,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem
+  Box
 } from '@mui/material';
-import { AccountCircle, Notifications } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';  // Make sure this import exists
 import { useAuth } from '../../hooks/useAuth';
 
 const Header = () => {
+  const navigate = useNavigate();  // Make sure this line exists
   const { user, logout } = useAuth();
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleLogout = () => {
     logout();
-    handleClose();
+    navigate('/');  // This should work now
   };
 
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ flexGrow: 1, cursor: 'pointer' }}
+          onClick={() => navigate('/')}
+        >
           Discogs Price Alerts
         </Typography>
 
         {user ? (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton color="inherit">
-              <Notifications />
-            </IconButton>
-
-            <IconButton
-              size="large"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-            >
-              <MenuItem onClick={handleClose}>Profile</MenuItem>
-              <MenuItem onClick={handleClose}>Settings</MenuItem>
-              <MenuItem onClick={handleLogout}>Logout</MenuItem>
-            </Menu>
+          <Box>
+            <Button color="inherit" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </Button>
+            <Button color="inherit" onClick={handleLogout}>
+              Logout
+            </Button>
           </Box>
         ) : (
           <Box>
-            <Button color="inherit" href="/login">
+            <Button color="inherit" onClick={() => navigate('/login')}>
               Login
             </Button>
-            <Button color="inherit" href="/register">
+            <Button color="inherit" onClick={() => navigate('/register')}>
               Register
             </Button>
           </Box>

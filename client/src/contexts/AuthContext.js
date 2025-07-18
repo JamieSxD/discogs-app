@@ -10,15 +10,33 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      // You can add a call to verify the token here
+      // Add token to axios headers immediately
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      // Verify token and get user info
+      api.get('/auth/me')
+        .then(response => {
+          setUser(response.data.user);
+        })
+        .catch((error) => {
+          console.error('Token verification failed:', error);
+          // Token is invalid, remove it
+          localStorage.removeItem('token');
+          delete api.defaults.headers.common['Authorization'];
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     const { token, user } = response.data;
     localStorage.setItem('token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(user);
     return response.data;
   };
@@ -27,17 +45,20 @@ export const AuthProvider = ({ children }) => {
     const response = await api.post('/auth/register', userData);
     const { token, user } = response.data;
     localStorage.setItem('token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(user);
     return response.data;
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
   const value = {
     user,
+    setUser,  // Add this so components can update user
     login,
     register,
     logout,

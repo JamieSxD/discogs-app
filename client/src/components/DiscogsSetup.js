@@ -7,14 +7,18 @@ import {
   Button,
   Alert,
   Box,
-  Link
+  Link,
+  Paper
 } from '@mui/material';
 import api from '../config/api';
+import { useAuth } from '../hooks/useAuth';  // Add this import
 
 const DiscogsSetup = ({ onConnect }) => {
+  const { setUser } = useAuth();  // We'll need to add this to AuthContext
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleConnect = async () => {
     if (!token.trim()) {
@@ -24,65 +28,93 @@ const DiscogsSetup = ({ onConnect }) => {
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      await api.post('/discogs/verify-token', { token });
-      onConnect();
+      const response = await api.post('/discogs/verify-token', { token });
+      setSuccess(`Successfully connected! Welcome, ${response.data.discogsProfile.username}`);
+
+      // Update the user object with the new Discogs info
+      if (setUser && response.data.user) {
+        setUser(response.data.user);
+      }
+
+      setTimeout(() => {
+        onConnect();
+      }, 1500);
     } catch (err) {
-      setError('Invalid token. Please check your Discogs personal access token.');
+      setError(err.response?.data?.error || 'Invalid token. Please check your Discogs personal access token.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h5" gutterBottom>
-          Connect Your Discogs Account
-        </Typography>
-
-        <Typography paragraph color="textSecondary">
-          To get started, you'll need to connect your Discogs account using a personal access token.
-        </Typography>
-
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            How to get your token:
+    <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+      <Card elevation={3}>
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="h4" gutterBottom align="center">
+            Connect Your Discogs Account
           </Typography>
-          <Typography component="div">
-            1. Go to{' '}
-            <Link href="https://www.discogs.com/settings/developers" target="_blank">
-              Discogs Developer Settings
-            </Link>
-            <br />
-            2. Click "Generate new token"
-            <br />
-            3. Copy the token and paste it below
+
+          <Typography paragraph color="textSecondary" align="center">
+            To get started, you'll need to connect your Discogs account using a personal access token.
           </Typography>
-        </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Paper sx={{ p: 3, mb: 3, bgcolor: 'grey.50' }}>
+            <Typography variant="h6" gutterBottom>
+              How to get your token:
+            </Typography>
+            <Typography component="div" sx={{ '& ol': { pl: 2 } }}>
+              <ol>
+                <li>
+                  Go to{' '}
+                  <Link
+                    href="https://www.discogs.com/settings/developers"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Discogs Developer Settings
+                  </Link>
+                </li>
+                <li>Click "Generate new token"</li>
+                <li>Give it a name (like "Price Alerts App")</li>
+                <li>Copy the token and paste it below</li>
+              </ol>
+            </Typography>
+          </Paper>
 
-        <TextField
-          fullWidth
-          label="Discogs Personal Access Token"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="Paste your Discogs token here"
-          sx={{ mb: 2 }}
-        />
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-        <Button
-          variant="contained"
-          onClick={handleConnect}
-          disabled={loading}
-          fullWidth
-        >
-          {loading ? 'Connecting...' : 'Connect Discogs Account'}
-        </Button>
-      </CardContent>
-    </Card>
+          <TextField
+            fullWidth
+            label="Discogs Personal Access Token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Paste your Discogs token here"
+            sx={{ mb: 3 }}
+            disabled={loading}
+          />
+
+          <Button
+            variant="contained"
+            onClick={handleConnect}
+            disabled={loading || !token.trim()}
+            fullWidth
+            size="large"
+          >
+            {loading ? 'Connecting...' : 'Connect Discogs Account'}
+          </Button>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="textSecondary" align="center">
+              Your token is stored securely and only used to access your Discogs data.
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
 
